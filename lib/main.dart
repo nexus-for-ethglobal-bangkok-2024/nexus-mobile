@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:nexus_mobile/login_screen.dart';
 import 'package:web3auth_flutter/enums.dart';
 import 'package:web3auth_flutter/input.dart';
 import 'package:web3auth_flutter/output.dart';
@@ -88,125 +89,78 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(),
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Web3Auth x Flutter QuickStart'),
-        ),
-        body: SingleChildScrollView(
-          child: Center(
-              child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-              ),
-              Visibility(
-                visible: !logoutVisible,
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.flutter_dash,
-                      size: 80,
-                      color: Color(0xFF1389fd),
+        body: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Visibility(
+                    visible: !logoutVisible,
+                    child: LoginScreen(
+                      emailController: emailController,
+                      loginFunction: () {
+                        _login(
+                          () => _withEmailPasswordless(emailController.text),
+                        );
+                      },
+                    )),
+                ElevatedButtonTheme(
+                  data: ElevatedButtonThemeData(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 195, 47, 233),
+                      foregroundColor: Colors.white,
                     ),
-                    const SizedBox(
-                      height: 40,
+                  ),
+                  child: Visibility(
+                    visible: logoutVisible,
+                    child: Column(
+                      children: [
+                        Center(
+                          child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red[600],
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: _logout(),
+                              child: const Column(
+                                children: [
+                                  Text('Logout'),
+                                ],
+                              )),
+                        ),
+                        const Text(
+                          'Blockchain calls',
+                          style: TextStyle(fontSize: 20),
+                        ),
+                        ElevatedButton(
+                          onPressed: _getUserInfo,
+                          child: const Text('Get UserInfo'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _getAddress,
+                          child: const Text('Get Address'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _getBalance,
+                          child: const Text('Get Balance'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _sendTransaction,
+                          child: const Text('Send Transaction'),
+                        ),
+                      ],
                     ),
-                    const Text(
-                      'Web3Auth',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 36,
-                        color: Color(0xFF0364ff),
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    const Text(
-                      'Welcome to Web3Auth x Flutter Quick Start Demo',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    const Text(
-                      'Login with',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    // Text field for entering the user's email
-                    TextField(
-                      controller: emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Enter Email',
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: _login(
-                        () => _withEmailPasswordless(emailController.text),
-                      ),
-                      child: const Text('Login with Email Passwordless'),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButtonTheme(
-                data: ElevatedButtonThemeData(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 195, 47, 233),
-                    foregroundColor: Colors.white,
                   ),
                 ),
-                child: Visibility(
-                  visible: logoutVisible,
-                  child: Column(
-                    children: [
-                      Center(
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red[600],
-                              foregroundColor: Colors.white,
-                            ),
-                            onPressed: _logout(),
-                            child: const Column(
-                              children: [
-                                Text('Logout'),
-                              ],
-                            )),
-                      ),
-                      const Text(
-                        'Blockchain calls',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                      ElevatedButton(
-                        onPressed: _getUserInfo,
-                        child: const Text('Get UserInfo'),
-                      ),
-                      ElevatedButton(
-                        onPressed: _getAddress,
-                        child: const Text('Get Address'),
-                      ),
-                      ElevatedButton(
-                        onPressed: _getBalance,
-                        child: const Text('Get Balance'),
-                      ),
-                      ElevatedButton(
-                        onPressed: _sendTransaction,
-                        child: const Text('Send Transaction'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(_result),
-              )
-            ],
-          )),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(_result),
+                )
+              ],
+            ),
+          ),
         ),
       ),
     );
