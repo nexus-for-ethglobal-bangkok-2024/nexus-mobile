@@ -3,6 +3,8 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:nexus_mobile/controller.dart';
 import 'package:nexus_mobile/login_screen.dart';
 import 'package:nexus_mobile/navigator_screen.dart';
 import 'package:web3auth_flutter/enums.dart';
@@ -13,6 +15,8 @@ import 'package:web3auth_flutter/web3auth_flutter.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+final _appController = Get.put(AppController());
 
 void main() {
   runApp(const MyApp());
@@ -26,10 +30,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  String _result = '';
-  bool logoutVisible = false;
   String rpcUrl = 'https://rpc.ankr.com/eth_sepolia';
-  // TextEditingController for handling input from the text field
+
   final TextEditingController emailController = TextEditingController();
 
   @override
@@ -47,13 +49,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(final AppLifecycleState state) {
-    // This is important to trigger the on Android.
     if (state == AppLifecycleState.resumed) {
       Web3AuthFlutter.setCustomTabsClosed();
     }
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     Uri redirectUrl;
     String clientId =
@@ -79,9 +79,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final String res = await Web3AuthFlutter.getPrivKey();
     log(res);
     if (res.isNotEmpty) {
-      setState(() {
-        logoutVisible = true;
-      });
+      _appController.logoutVisible.value = true;
     }
   }
 
@@ -120,31 +118,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final Web3AuthResponse response = await method();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('privateKey', response.privKey.toString());
-      setState(() {
-        _result = response.toString();
-        logoutVisible = true;
-      });
     } on UserCancelledException {
       log("User cancelled.");
     } on UnKnownException {
       log("Unknown exception occurred");
     }
-  }
-
-  VoidCallback _logout() {
-    return () async {
-      try {
-        setState(() {
-          _result = '';
-          logoutVisible = false;
-        });
-        await Web3AuthFlutter.logout();
-      } on UserCancelledException {
-        log("User cancelled.");
-      } on UnKnownException {
-        log("Unknown exception occurred");
-      }
-    };
   }
 
   Future<Web3AuthResponse> _withEmailPasswordless(String userEmail) async {
@@ -159,67 +137,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // Handle the error as needed
       // You might want to show a user-friendly message or log the error
       return Future.error("Login failed");
-    }
-  }
-
-  Future<TorusUserInfo> _getUserInfo() async {
-    try {
-      TorusUserInfo userInfo = await Web3AuthFlutter.getUserInfo();
-      log(userInfo.toString());
-      setState(() {
-        _result = userInfo.toString();
-      });
-      return userInfo;
-    } catch (e) {
-      log("Error during email/passwordless login: $e");
-      // Handle the error as needed
-      // You might want to show a user-friendly message or log the error
-      return Future.error("Login failed");
-    }
-  }
-
-  Future<String> _getAddress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final privateKey = prefs.getString('privateKey') ?? '0';
-
-    final credentials = EthPrivateKey.fromHex(privateKey);
-    final address = credentials.address;
-    log("Account, ${address.hexEip55}");
-    setState(() {
-      _result = address.hexEip55.toString();
-    });
-    return address.hexEip55;
-  }
-
-  Future<EtherAmount> _getBalance() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final privateKey = prefs.getString('privateKey') ?? '0';
-
-      final client = Web3Client(rpcUrl, Client());
-      final credentials = EthPrivateKey.fromHex(privateKey);
-      final address = credentials.address;
-
-      // Get the balance in wei
-      final weiBalance = await client.getBalance(address);
-
-      // Convert wei to ether
-      final etherBalance = EtherAmount.fromBigInt(
-        EtherUnit.ether,
-        weiBalance.getInEther,
-      );
-
-      log(etherBalance.toString());
-
-      setState(() {
-        _result = etherBalance.toString();
-      });
-
-      return etherBalance;
-    } catch (e) {
-      // Handle errors as needed
-      log("Error getting balance: $e");
-      return EtherAmount.zero();
     }
   }
 
@@ -247,14 +164,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         chainId: 11155111,
       );
       log(receipt);
-      setState(() {
-        _result = receipt;
-      });
+
       return receipt;
     } catch (e) {
-      setState(() {
-        _result = e.toString();
-      });
       return e.toString();
     }
   }
@@ -265,43 +177,45 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
       home: Scaffold(
-        body: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Visibility(
-                    visible: !logoutVisible,
-                    child: LoginScreen(
-                      loginWithGithub: () {
-                        _login(
-                          () => _loginWithGitHub(),
-                        );
-                      },
-                      loginWithDiscord: () {
-                        _login(
-                          () => _loginWithDiscord(),
-                        );
-                      },
-                      loginWithGoogle: () {
-                        _login(
-                          () => _loginWithGoogle(),
-                        );
-                      },
-                      emailController: emailController,
-                      loginFunction: () {
-                        _login(
-                          () => _withEmailPasswordless(emailController.text),
-                        );
-                      },
-                    )),
-                Visibility(
-                  visible: logoutVisible,
-                  child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 1,
-                      height: MediaQuery.of(context).size.height * 1,
-                      child: NavigatorScreen()),
-                )
-              ],
+        body: Obx(
+          () => Center(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Visibility(
+                      visible: !_appController.logoutVisible.value,
+                      child: LoginScreen(
+                        loginWithGithub: () {
+                          _login(
+                            () => _loginWithGitHub(),
+                          );
+                        },
+                        loginWithDiscord: () {
+                          _login(
+                            () => _loginWithDiscord(),
+                          );
+                        },
+                        loginWithGoogle: () {
+                          _login(
+                            () => _loginWithGoogle(),
+                          );
+                        },
+                        emailController: emailController,
+                        loginFunction: () {
+                          _login(
+                            () => _withEmailPasswordless(emailController.text),
+                          );
+                        },
+                      )),
+                  Visibility(
+                    visible: _appController.logoutVisible.value,
+                    child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 1,
+                        height: MediaQuery.of(context).size.height * 1,
+                        child: NavigatorScreen()),
+                  )
+                ],
+              ),
             ),
           ),
         ),
