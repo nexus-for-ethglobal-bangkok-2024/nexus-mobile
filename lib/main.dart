@@ -55,18 +55,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> initPlatformState() async {
     Uri redirectUrl;
     String clientId =
-        'BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ';
+        'BKjUQ9w3wTF9yngCfvxvI4wt78l8FJdCJt6w_vBnlDQG7xAPWobxTovvXReaUA_5c-_kBG8H27M1azZ8jF9MW0U';
     if (Platform.isAndroid) {
-      redirectUrl = Uri.parse('w3a://com.example.w3aflutter/auth');
+      redirectUrl = Uri.parse('w3a://com.example.nexus_mobile');
     } else if (Platform.isIOS) {
-      redirectUrl = Uri.parse('com.example.w3aflutter://auth');
+      redirectUrl = Uri.parse('com.example.nexus_mobile://auth');
     } else {
       throw UnKnownException('Unknown platform');
     }
 
     await Web3AuthFlutter.init(Web3AuthOptions(
       clientId: clientId,
-      network: Network.sapphire_mainnet,
+      network: Network.sapphire_devnet,
       redirectUrl: redirectUrl,
       buildEnv: BuildEnv.production,
       // 259200 allows user to stay authenticated for 3 days with Web3Auth.
