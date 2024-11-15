@@ -3,15 +3,20 @@
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({
-    super.key,
-    required this.emailController,
-    required this.loginFunction,
-  });
+  const LoginScreen(
+      {super.key,
+      required this.emailController,
+      required this.loginFunction,
+      required this.loginWithGoogle,
+      required this.loginWithGithub,
+      required this.loginWithDiscord});
 
   final TextEditingController emailController;
 
   final void Function()? loginFunction;
+  final void Function()? loginWithGoogle;
+  final void Function()? loginWithGithub;
+  final void Function()? loginWithDiscord;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +63,59 @@ class LoginScreen extends StatelessWidget {
           CustomButtonWidget(
               function: loginFunction,
               functionName: "Login with Email Passwordless"),
+          const SizedBox(
+            height: 30,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 99,
+                child: Divider(
+                  color: Colors.grey,
+                  thickness: 1,
+                  endIndent: 15,
+                  indent: 15,
+                  height: 25,
+                ),
+              ),
+              Text(
+                "Login with Social Provider",
+                style: TextStyle(fontSize: 11),
+              ),
+              SizedBox(
+                width: 99,
+                child: Divider(
+                  color: Colors.grey,
+                  thickness: 1,
+                  endIndent: 15,
+                  indent: 15,
+                  height: 25,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 30,
+          ),
+          SocialButtonWidget(
+              function: loginWithGoogle,
+              functionName: "Continue with Google",
+              functionImage: "assets/images/google.png"),
+          const SizedBox(
+            height: 20,
+          ),
+          SocialButtonWidget(
+              function: loginWithGithub,
+              functionName: "Continue with GitHub",
+              functionImage: "assets/images/github.png"),
+          const SizedBox(
+            height: 20,
+          ),
+          SocialButtonWidget(
+              function: loginWithDiscord,
+              functionName: "Continue with Discord",
+              functionImage: "assets/images/discord.png")
         ],
       ),
     );
@@ -185,6 +243,57 @@ class CustomButtonWidget extends StatelessWidget {
             functionName,
             style: const TextStyle(fontSize: 16, color: Colors.black),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Social Button
+
+class SocialButtonWidget extends StatelessWidget {
+  const SocialButtonWidget(
+      {super.key,
+      required this.function,
+      required this.functionName,
+      required this.functionImage});
+
+  final void Function()? function;
+
+  final String functionName;
+
+  final String functionImage;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: function,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          border: Border.all(width: 1, color: Colors.white),
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: Image.asset(
+                functionImage,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(
+              width: 20,
+            ),
+            Text(
+              functionName,
+              style: const TextStyle(fontSize: 16, color: Colors.white),
+            ),
+          ],
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:nexus_mobile/login_screen.dart';
+import 'package:nexus_mobile/navigator_screen.dart';
 import 'package:web3auth_flutter/enums.dart';
 import 'package:web3auth_flutter/input.dart';
 import 'package:web3auth_flutter/output.dart';
@@ -81,6 +82,36 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       setState(() {
         logoutVisible = true;
       });
+    }
+  }
+
+  Future<Web3AuthResponse> _loginWithGoogle() async {
+    try {
+      return await Web3AuthFlutter.login(LoginParams(
+        loginProvider: Provider.google,
+      ));
+    } catch (e) {
+      return Future.error("Login failed");
+    }
+  }
+
+  Future<Web3AuthResponse> _loginWithDiscord() async {
+    try {
+      return await Web3AuthFlutter.login(LoginParams(
+        loginProvider: Provider.discord,
+      ));
+    } catch (e) {
+      return Future.error("Login failed");
+    }
+  }
+
+  Future<Web3AuthResponse> _loginWithGitHub() async {
+    try {
+      return await Web3AuthFlutter.login(LoginParams(
+        loginProvider: Provider.github,
+      ));
+    } catch (e) {
+      return Future.error("Login failed");
     }
   }
 
@@ -241,6 +272,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 Visibility(
                     visible: !logoutVisible,
                     child: LoginScreen(
+                      loginWithGithub: () {
+                        _login(
+                          () => _loginWithGitHub(),
+                        );
+                      },
+                      loginWithDiscord: () {
+                        _login(
+                          () => _loginWithDiscord(),
+                        );
+                      },
+                      loginWithGoogle: () {
+                        _login(
+                          () => _loginWithGoogle(),
+                        );
+                      },
                       emailController: emailController,
                       loginFunction: () {
                         _login(
@@ -248,57 +294,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         );
                       },
                     )),
-                ElevatedButtonTheme(
-                  data: ElevatedButtonThemeData(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 195, 47, 233),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  child: Visibility(
-                    visible: logoutVisible,
-                    child: Column(
-                      children: [
-                        Center(
-                          child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red[600],
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: _logout(),
-                              child: const Column(
-                                children: [
-                                  Text('Logout'),
-                                ],
-                              )),
-                        ),
-                        const Text(
-                          'Blockchain calls',
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getUserInfo,
-                          child: const Text('Get UserInfo'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getAddress,
-                          child: const Text('Get Address'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getBalance,
-                          child: const Text('Get Balance'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _sendTransaction,
-                          child: const Text('Send Transaction'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(_result),
+                Visibility(
+                  visible: logoutVisible,
+                  child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 1,
+                      height: MediaQuery.of(context).size.height * 1,
+                      child: NavigatorScreen()),
                 )
               ],
             ),

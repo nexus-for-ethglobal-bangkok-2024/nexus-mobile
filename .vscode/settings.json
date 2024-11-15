@@ -3,8 +3,10 @@
         "ARGB",
         "autovalidate",
         "devnet",
+        "horiz",
         "Obsecure",
         "Passwordless",
-        "prefs"
+        "prefs",
+        "Tovv"
     ]
 }
