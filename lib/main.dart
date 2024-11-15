@@ -70,8 +70,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       network: Network.sapphire_devnet,
       redirectUrl: redirectUrl,
       buildEnv: BuildEnv.production,
-      // 259200 allows user to stay authenticated for 3 days with Web3Auth.
-      // Default is 86400, which is 1 day.
       sessionTime: 259200,
     ));
 
@@ -86,102 +84,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        body: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Visibility(
-                    visible: !logoutVisible,
-                    child: LoginScreen(
-                      emailController: emailController,
-                      loginFunction: () {
-                        _login(
-                          () => _withEmailPasswordless(emailController.text),
-                        );
-                      },
-                    )),
-                ElevatedButtonTheme(
-                  data: ElevatedButtonThemeData(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 195, 47, 233),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  child: Visibility(
-                    visible: logoutVisible,
-                    child: Column(
-                      children: [
-                        Center(
-                          child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red[600],
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: _logout(),
-                              child: const Column(
-                                children: [
-                                  Text('Logout'),
-                                ],
-                              )),
-                        ),
-                        const Text(
-                          'Blockchain calls',
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getUserInfo,
-                          child: const Text('Get UserInfo'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getAddress,
-                          child: const Text('Get Address'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getBalance,
-                          child: const Text('Get Balance'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _sendTransaction,
-                          child: const Text('Send Transaction'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(_result),
-                )
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  VoidCallback _login(Future<Web3AuthResponse> Function() method) {
-    return () async {
-      try {
-        final Web3AuthResponse response = await method();
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('privateKey', response.privKey.toString());
-        setState(() {
-          _result = response.toString();
-          logoutVisible = true;
-        });
-      } on UserCancelledException {
-        log("User cancelled.");
-      } on UnKnownException {
-        log("Unknown exception occurred");
-      }
-    };
+  Future<void> _login(Future<Web3AuthResponse> Function() method) async {
+    try {
+      final Web3AuthResponse response = await method();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('privateKey', response.privKey.toString());
+      setState(() {
+        _result = response.toString();
+        logoutVisible = true;
+      });
+    } on UserCancelledException {
+      log("User cancelled.");
+    } on UnKnownException {
+      log("Unknown exception occurred");
+    }
   }
 
   VoidCallback _logout() {
@@ -310,5 +226,85 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       });
       return e.toString();
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(),
+      home: Scaffold(
+        body: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Visibility(
+                    visible: !logoutVisible,
+                    child: LoginScreen(
+                      emailController: emailController,
+                      loginFunction: () {
+                        _login(
+                          () => _withEmailPasswordless(emailController.text),
+                        );
+                      },
+                    )),
+                ElevatedButtonTheme(
+                  data: ElevatedButtonThemeData(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 195, 47, 233),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  child: Visibility(
+                    visible: logoutVisible,
+                    child: Column(
+                      children: [
+                        Center(
+                          child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red[600],
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: _logout(),
+                              child: const Column(
+                                children: [
+                                  Text('Logout'),
+                                ],
+                              )),
+                        ),
+                        const Text(
+                          'Blockchain calls',
+                          style: TextStyle(fontSize: 20),
+                        ),
+                        ElevatedButton(
+                          onPressed: _getUserInfo,
+                          child: const Text('Get UserInfo'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _getAddress,
+                          child: const Text('Get Address'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _getBalance,
+                          child: const Text('Get Balance'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _sendTransaction,
+                          child: const Text('Send Transaction'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(_result),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

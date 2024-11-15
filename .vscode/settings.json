@@ -4,6 +4,7 @@
         "autovalidate",
         "devnet",
         "Obsecure",
-        "Passwordless"
+        "Passwordless",
+        "prefs"
     ]
 }
