@@ -45,6 +45,11 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> launchWallet() async {
+    List<dynamic> params = [];
+    // Message to be signed
+    params.add("Hello, Web3Auth from Flutter!");
+    // User's EOA address
+    params.add(walletAddress);
     try {
       await Web3AuthFlutter.launchWalletServices(
         ChainConfig(
@@ -52,6 +57,18 @@ class _WalletScreenState extends State<WalletScreen> {
           rpcTarget: "https://rpc.ankr.com/eth_sepolia",
         ),
       );
+
+      await Web3AuthFlutter.request(
+        ChainConfig(
+          chainId: "0x1",
+          rpcTarget: "https://rpc.ankr.com/eth_sepolia",
+        ),
+        "personal_sign",
+        params,
+      );
+
+      final signResponse = await Web3AuthFlutter.getSignResponse();
+      log("$signResponse");
     } on UserCancelledException {
       log("User cancelled.");
     } catch (e) {
