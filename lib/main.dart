@@ -1,8 +1,11 @@
+// ignore_for_file: unnecessary_new
+
 import 'dart:async';
 import 'dart:collection';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nexus_mobile/controller.dart';
@@ -85,11 +88,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     ));
 
     await Web3AuthFlutter.initialize();
-
+    _appController.authState.value = "Loading";
     final String res = await Web3AuthFlutter.getPrivKey();
     log(res);
     if (res.isNotEmpty) {
-      _appController.logoutVisible.value = true;
+      _appController.authState.value = "LoggedIn";
+    } else {
+      _appController.authState.value = "LoggedOut";
     }
   }
 
@@ -125,10 +130,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> _login(Future<Web3AuthResponse> Function() method) async {
     try {
+      _appController.authState.value = "Loading";
       final Web3AuthResponse response = await method();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('privateKey', response.privKey.toString());
-      _appController.logoutVisible.value = true;
+      _appController.authState.value = "LoggedIn";
     } on UserCancelledException {
       log("User cancelled.");
     } on UnKnownException {
@@ -161,7 +167,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               child: Column(
                 children: [
                   Visibility(
-                      visible: !_appController.logoutVisible.value,
+                      visible: _appController.authState.value == "Loading",
+                      child: Center(
+                        child: CupertinoActivityIndicator(),
+                      )),
+                  Visibility(
+                      visible: _appController.authState.value == "LoggedOut",
                       child: LoginScreen(
                         loginWithGithub: () {
                           _login(
@@ -186,7 +197,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         },
                       )),
                   Visibility(
-                    visible: _appController.logoutVisible.value,
+                    visible: _appController.authState.value == "LoggedIn",
                     child: SizedBox(
                         width: MediaQuery.of(context).size.width * 1,
                         height: MediaQuery.of(context).size.height * 1,

@@ -35,7 +35,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Future<void> _logout() async {
     try {
-      _appController.logoutVisible.value = false;
+      _appController.authState.value = "LoggedOut";
       await Web3AuthFlutter.logout();
     } on UserCancelledException {
       log("User cancelled.");
