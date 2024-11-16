@@ -123,7 +123,13 @@ class _SwapScreenState extends State<SwapScreen> {
                   const SizedBox(
                     height: 20,
                   ),
-                  isCrypto ? crypto() : const SizedBox()
+                  isCrypto
+                      ? crypto()
+                      : isUSD
+                          ? usd()
+                          : isStock
+                              ? stock()
+                              : const SizedBox()
                 ],
               ),
             ),
@@ -224,6 +230,143 @@ class _SwapScreenState extends State<SwapScreen> {
           child: Center(
             child: Text(
               "Swap to USDT",
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+        Text(
+          "Total Amount\$ 0.0",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget usd() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(
+          height: 20,
+        ),
+        Text(
+          "USDT to Convert",
+          style: TextStyle(color: Colors.white),
+        ),
+        TextField(
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(hintText: "0.00"),
+        ),
+        const SizedBox(
+          height: 10,
+        ),
+        Center(
+          child: IconButton(
+              onPressed: () {},
+              icon: Icon(
+                Icons.arrow_downward,
+                color: Colors.white,
+              )),
+        ),
+        const SizedBox(
+          height: 10,
+        ),
+        Text(
+          "USD Amount",
+          style: TextStyle(color: Colors.white),
+        ),
+        TextField(
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(hintText: "0.00"),
+        ),
+        const SizedBox(
+          height: 30,
+        ),
+        Container(
+          width: double.infinity,
+          height: 40,
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12), color: Colors.white),
+          child: Center(
+            child: Text(
+              "Convert to USD",
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+        Text(
+          "Total Amount\$ 0.0",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget stock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(
+          height: 20,
+        ),
+        Text(
+          "Available USD",
+          style: TextStyle(color: Colors.white),
+        ),
+        TextField(
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(hintText: "0.00"),
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Select Stock",
+              style: TextStyle(color: Colors.white),
+            ),
+            const SizedBox(
+              height: 15,
+            ),
+            DropdownMenu(width: double.infinity, dropdownMenuEntries: [
+              DropdownMenuEntry(value: "AAPL", label: "AAPL"),
+              DropdownMenuEntry(value: "GOOGL", label: "GOOGL"),
+              DropdownMenuEntry(value: "MSFT", label: "MSFT"),
+              DropdownMenuEntry(value: "AMZN", label: "AMZN"),
+              DropdownMenuEntry(value: "TSLA", label: "TSLA"),
+            ])
+          ],
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+        Text(
+          "Number of Shares",
+          style: TextStyle(color: Colors.white),
+        ),
+        TextField(
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(hintText: "0"),
+        ),
+        const SizedBox(
+          height: 30,
+        ),
+        Container(
+          width: double.infinity,
+          height: 40,
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12), color: Colors.white),
+          child: Center(
+            child: Text(
+              "Buy Stock",
               style: TextStyle(color: Colors.black),
             ),
           ),
