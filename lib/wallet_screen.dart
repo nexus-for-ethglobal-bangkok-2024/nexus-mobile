@@ -6,9 +6,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/instance_manager.dart';
-import 'package:http/http.dart';
+
 import 'package:nexus_mobile/controller.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3auth_flutter/input.dart';
 import 'package:web3auth_flutter/output.dart';
@@ -33,17 +33,6 @@ class _WalletScreenState extends State<WalletScreen> {
 
   String userProfile = "";
 
-  final _addressController = TextEditingController();
-  final _amountController = TextEditingController();
-
-  RefreshController refreshController =
-      RefreshController(initialRefresh: false);
-
-  void onRefresh() async {
-    _getBalance();
-    refreshController.refreshCompleted();
-  }
-
   Future<void> _logout() async {
     try {
       _appController.logoutVisible.value = false;
@@ -55,39 +44,18 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
-  Future<void> _transferTokens(
-      String recipient, double amount, BuildContext context) async {
+  Future<void> launchWallet() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final privateKey = prefs.getString('privateKey') ?? '0';
-      final web3Client =
-          Web3Client("https://rpc.ankr.com/eth_sepolia", Client());
-      final credentials = EthPrivateKey.fromHex(privateKey);
-
-      final weiAmount = BigInt.from(amount * 1e18);
-
-      final txHash = await web3Client.sendTransaction(
-        credentials,
-        Transaction(
-          to: EthereumAddress.fromHex(recipient),
-          value: EtherAmount.fromUnitAndValue(EtherUnit.wei, weiAmount),
-        ),
-        chainId: 11155111,
-      );
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          content: Text("Transaction successful: $txHash"),
+      await Web3AuthFlutter.launchWalletServices(
+        ChainConfig(
+          chainId: "0x1",
+          rpcTarget: "https://rpc.ankr.com/eth_sepolia",
         ),
       );
-      await _getBalance();
+    } on UserCancelledException {
+      log("User cancelled.");
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          content: Text("Error transferring tokens: $e"),
-        ),
-      );
+      log("Unknown exception occurred");
     }
   }
 
@@ -118,69 +86,10 @@ class _WalletScreenState extends State<WalletScreen> {
     return address.hexEip55;
   }
 
-  Future<double> _getBalance() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final privateKey = prefs.getString('privateKey') ?? '0';
-
-      final client = Web3Client("https://rpc.ankr.com/eth_sepolia", Client());
-      final credentials = EthPrivateKey.fromHex(privateKey);
-      final address = credentials.address;
-
-      final weiBalance = await client.getBalance(address);
-
-      final etherBalance = weiBalance.getValueInUnit(EtherUnit.ether);
-
-      log("Balance: $etherBalance SepoliaETH");
-
-      setState(() {
-        walletBalance =
-            "${etherBalance.toString().length > 6 ? etherBalance.toString().substring(0, 6) : etherBalance.toString()} SepoliaETH";
-      });
-
-      return etherBalance;
-    } catch (e) {
-      log("Error getting balance: $e");
-      return 0.0;
-    }
-  }
-
-  void _showPopupMenu(BuildContext context, TapDownDetails details) async {
-    final position = details.globalPosition;
-
-    final result = await showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx, // X-coordinate
-        position.dy, // Y-coordinate
-        MediaQuery.of(context).size.width - position.dx, // Distance from right
-        MediaQuery.of(context).size.height -
-            position.dy, // Distance from bottom
-      ),
-      items: [
-        PopupMenuItem<String>(
-          value: 'Logout',
-          child: Text('Logout'),
-        ),
-        PopupMenuItem<String>(
-          value: 'See More',
-          child: Text('See More'),
-        ),
-      ],
-      elevation: 8.0,
-    );
-
-    if (result != null) {
-      if (result == "Logout") {
-        _logout();
-      }
-    }
-  }
-
   @override
   void initState() {
     _getAddress();
-    _getBalance();
+
     _getUserInfo();
     super.initState();
   }
@@ -189,16 +98,11 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: walletAddress.isEmpty || walletBalance.isEmpty
-            ? Center(
-                child: CupertinoActivityIndicator(),
-              )
-            : SmartRefresher(
-                controller: refreshController,
-                header: const WaterDropHeader(),
-                onRefresh: () => onRefresh(),
-                semanticChildCount: 2,
-                child: Padding(
+          body: walletAddress.isEmpty
+              ? Center(
+                  child: CupertinoActivityIndicator(),
+                )
+              : Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: ListView(
                     children: [
@@ -216,21 +120,17 @@ class _WalletScreenState extends State<WalletScreen> {
                               fit: BoxFit.cover,
                             ),
                           ),
-                          GestureDetector(
-                            onTapDown: (details) =>
-                                _showPopupMenu(context, details),
-                            child: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(30)),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(30),
-                                child: Image.network(
-                                  userProfile,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Icon(Icons.error),
-                                ),
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30)),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: Image.network(
+                                userProfile,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(Icons.error),
                               ),
                             ),
                           )
@@ -284,119 +184,34 @@ class _WalletScreenState extends State<WalletScreen> {
                                     ))
                               ],
                             ),
-                            Text(
-                              walletBalance,
-                              style: TextStyle(
-                                  fontSize: 32, fontWeight: FontWeight.bold),
-                            ),
                             const SizedBox(
-                              height: 15,
+                              height: 20,
                             ),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          actions: [
-                                            TextButton(
-                                                onPressed: () {
-                                                  _transferTokens(
-                                                      _addressController.text,
-                                                      double.parse(
-                                                          _amountController
-                                                              .text),
-                                                      context);
-                                                },
-                                                child: Text("Send"))
-                                          ],
-                                          content: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              TextField(
-                                                decoration: InputDecoration(
-                                                    hintText: "Enter Address"),
-                                                controller: _addressController,
-                                              ),
-                                              TextField(
-                                                decoration: InputDecoration(
-                                                  hintText: "Enter Amount",
-                                                ),
-                                                controller: _amountController,
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                      );
+                                    onTap: () async {
+                                      await launchWallet();
                                     },
-                                    child: button("Send", Icons.arrow_upward)),
-                                button("Receive", Icons.arrow_downward),
-                                button("Buy", Icons.add),
+                                    child:
+                                        button("Launch Wallet", Icons.wallet)),
+                                const SizedBox(
+                                  width: 10,
+                                ),
+                                GestureDetector(
+                                    onTap: () async {
+                                      await _logout();
+                                    },
+                                    child: button("Logout", Icons.logout)),
                               ],
-                            ),
+                            )
                           ],
                         ),
                       ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                isTokenOnTap = true;
-                              });
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 10, horizontal: 35),
-                              decoration: BoxDecoration(
-                                  color: isTokenOnTap
-                                      ? Color.fromARGB(255, 52, 119, 235)
-                                      : const Color.fromARGB(
-                                          255, 105, 103, 103),
-                                  borderRadius: BorderRadius.circular(30)),
-                              child: Text(
-                                "Tokens",
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                isTokenOnTap = false;
-                              });
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 10, horizontal: 35),
-                              decoration: BoxDecoration(
-                                  color: !isTokenOnTap
-                                      ? Color.fromARGB(255, 52, 119, 235)
-                                      : const Color.fromARGB(
-                                          255, 105, 103, 103),
-                                  borderRadius: BorderRadius.circular(30)),
-                              child: Text(
-                                "Transactions",
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
                     ],
                   ),
-                ),
-              ),
-      ),
+                )),
     );
   }
 
@@ -417,7 +232,6 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
           Text(
             name,
-            style: TextStyle(fontSize: 12),
           ),
         ],
       ),
