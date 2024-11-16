@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:developer';
 import 'dart:io';
 
@@ -53,6 +54,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Future<void> initPlatformState() async {
+    final themeMap = HashMap<String, String>();
+    themeMap['primary'] = "#229954";
+
+    final loginConfig = new HashMap<String, LoginConfigItem>();
+    loginConfig['google'] = LoginConfigItem(
+        verifier: "Nexus Custom Auth", // get it from web3auth dashboard
+        typeOfLogin: TypeOfLogin.google,
+        clientId:
+            "213836625724-e808oiebagr8kjh4gdlg89i5ubq2fddk.apps.googleusercontent.com" // google's client id
+        );
     Uri redirectUrl;
     String clientId =
         'BKjUQ9w3wTF9yngCfvxvI4wt78l8FJdCJt6w_vBnlDQG7xAPWobxTovvXReaUA_5c-_kBG8H27M1azZ8jF9MW0U';
@@ -69,6 +80,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       network: Network.sapphire_devnet,
       redirectUrl: redirectUrl,
       buildEnv: BuildEnv.production,
+      loginConfig: loginConfig,
       sessionTime: 259200,
     ));
 
