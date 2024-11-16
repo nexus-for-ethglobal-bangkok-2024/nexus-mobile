@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:get/instance_manager.dart';
 import 'package:http/http.dart';
 import 'package:nexus_mobile/controller.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3auth_flutter/input.dart';
 import 'package:web3auth_flutter/output.dart';
@@ -26,10 +27,22 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  bool isTokenOnTap = true;
   String walletBalance = "";
   String walletAddress = "";
 
   String userProfile = "";
+
+  final _addressController = TextEditingController();
+  final _amountController = TextEditingController();
+
+  RefreshController refreshController =
+      RefreshController(initialRefresh: false);
+
+  void onRefresh() async {
+    _getBalance();
+    refreshController.refreshCompleted();
+  }
 
   Future<void> _logout() async {
     try {
@@ -42,7 +55,8 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
-  Future<void> _transferTokens(String recipient, double amount) async {
+  Future<void> _transferTokens(
+      String recipient, double amount, BuildContext context) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final privateKey = prefs.getString('privateKey') ?? '0';
@@ -60,10 +74,20 @@ class _WalletScreenState extends State<WalletScreen> {
         ),
         chainId: 11155111,
       );
-      print("Transaction successful: $txHash");
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text("Transaction successful: $txHash"),
+        ),
+      );
       await _getBalance();
     } catch (e) {
-      print("Error transferring tokens: $e");
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text("Error transferring tokens: $e"),
+        ),
+      );
     }
   }
 
@@ -169,114 +193,207 @@ class _WalletScreenState extends State<WalletScreen> {
             ? Center(
                 child: CupertinoActivityIndicator(),
               )
-            : Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: ListView(
-                  children: [
-                    const SizedBox(
-                      height: 25,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SizedBox(
-                          width: 50,
-                          height: 50,
-                          child: Image.asset(
-                            "assets/images/web3_auth.png",
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTapDown: (details) =>
-                              _showPopupMenu(context, details),
-                          child: Container(
+            : SmartRefresher(
+                controller: refreshController,
+                header: const WaterDropHeader(),
+                onRefresh: () => onRefresh(),
+                semanticChildCount: 2,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: ListView(
+                    children: [
+                      const SizedBox(
+                        height: 25,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SizedBox(
                             width: 50,
                             height: 50,
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30)),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(30),
-                              child: Image.network(userProfile),
+                            child: Image.asset(
+                              "assets/images/web3_auth.png",
+                              fit: BoxFit.cover,
                             ),
                           ),
-                        )
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 30,
-                    ),
-                    Container(
-                      padding: EdgeInsets.all(30),
-                      decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomLeft,
-                            end: Alignment.topRight,
-                            colors: <Color>[
-                              Color.fromRGBO(43, 72, 123, 1),
-                              Color.fromRGBO(46, 71, 111, 1),
-                              Color.fromRGBO(48, 70, 103, 1),
-                              Color.fromRGBO(49, 68, 101, 1),
-                              Color.fromRGBO(51, 67, 96, 1),
-                              Color.fromRGBO(53, 67, 87, 1),
-                              Color.fromRGBO(53, 67, 87, 1),
-                              Color.fromRGBO(53, 67, 87, 1),
-                              Color.fromRGBO(48, 69, 103, 1),
-                              Color.fromRGBO(43, 72, 119, 1),
-                              Color.fromRGBO(39, 75, 133, 1),
-                              Color.fromRGBO(36, 77, 143, 1),
-                              Color.fromRGBO(35, 78, 147, 1),
-                            ], // Gradient from https://learnui.design/tools/gradient-generator.html
-                            tileMode: TileMode.mirror,
-                          ),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "${walletAddress.substring(0, 7)}...${walletAddress.substring(37)}",
-                                style: TextStyle(fontSize: 18),
+                          GestureDetector(
+                            onTapDown: (details) =>
+                                _showPopupMenu(context, details),
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30)),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(30),
+                                child: Image.network(
+                                  userProfile,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(Icons.error),
+                                ),
                               ),
-                              IconButton(
-                                  onPressed: () async {
-                                    await Clipboard.setData(
-                                        ClipboardData(text: walletAddress));
-                                  },
-                                  icon: Icon(
-                                    Icons.copy_rounded,
-                                    color: Colors.white,
-                                  ))
-                            ],
-                          ),
-                          Text(
-                            walletBalance,
-                            style: TextStyle(
-                                fontSize: 32, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(
-                            height: 15,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              GestureDetector(
-                                  onTap: () {
-                                    _transferTokens(
-                                        "0x756f70d15C7dC0C4e50bB067FCa4038A7F417DD7",
-                                        0.089999944525287);
-                                  },
-                                  child: button("Send", Icons.arrow_upward)),
-                              button("Receive", Icons.arrow_downward),
-                              button("Buy", Icons.add),
-                            ],
+                            ),
                           )
                         ],
                       ),
-                    )
-                  ],
+                      const SizedBox(
+                        height: 30,
+                      ),
+                      Container(
+                        padding: EdgeInsets.all(30),
+                        decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomLeft,
+                              end: Alignment.topRight,
+                              colors: <Color>[
+                                Color.fromRGBO(43, 72, 123, 1),
+                                Color.fromRGBO(46, 71, 111, 1),
+                                Color.fromRGBO(48, 70, 103, 1),
+                                Color.fromRGBO(49, 68, 101, 1),
+                                Color.fromRGBO(51, 67, 96, 1),
+                                Color.fromRGBO(53, 67, 87, 1),
+                                Color.fromRGBO(53, 67, 87, 1),
+                                Color.fromRGBO(53, 67, 87, 1),
+                                Color.fromRGBO(48, 69, 103, 1),
+                                Color.fromRGBO(43, 72, 119, 1),
+                                Color.fromRGBO(39, 75, 133, 1),
+                                Color.fromRGBO(36, 77, 143, 1),
+                                Color.fromRGBO(35, 78, 147, 1),
+                              ],
+                              tileMode: TileMode.mirror,
+                            ),
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "${walletAddress.substring(0, 7)}...${walletAddress.substring(37)}",
+                                  style: TextStyle(fontSize: 18),
+                                ),
+                                IconButton(
+                                    onPressed: () async {
+                                      await Clipboard.setData(
+                                          ClipboardData(text: walletAddress));
+                                    },
+                                    icon: Icon(
+                                      Icons.copy_rounded,
+                                      color: Colors.white,
+                                    ))
+                              ],
+                            ),
+                            Text(
+                              walletBalance,
+                              style: TextStyle(
+                                  fontSize: 32, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(
+                              height: 15,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          actions: [
+                                            TextButton(
+                                                onPressed: () {
+                                                  _transferTokens(
+                                                      _addressController.text,
+                                                      double.parse(
+                                                          _amountController
+                                                              .text),
+                                                      context);
+                                                },
+                                                child: Text("Send"))
+                                          ],
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              TextField(
+                                                decoration: InputDecoration(
+                                                    hintText: "Enter Address"),
+                                                controller: _addressController,
+                                              ),
+                                              TextField(
+                                                decoration: InputDecoration(
+                                                  hintText: "Enter Amount",
+                                                ),
+                                                controller: _amountController,
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: button("Send", Icons.arrow_upward)),
+                                button("Receive", Icons.arrow_downward),
+                                button("Buy", Icons.add),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                isTokenOnTap = true;
+                              });
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 35),
+                              decoration: BoxDecoration(
+                                  color: isTokenOnTap
+                                      ? Color.fromARGB(255, 52, 119, 235)
+                                      : const Color.fromARGB(
+                                          255, 105, 103, 103),
+                                  borderRadius: BorderRadius.circular(30)),
+                              child: Text(
+                                "Tokens",
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                isTokenOnTap = false;
+                              });
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 35),
+                              decoration: BoxDecoration(
+                                  color: !isTokenOnTap
+                                      ? Color.fromARGB(255, 52, 119, 235)
+                                      : const Color.fromARGB(
+                                          255, 105, 103, 103),
+                                  borderRadius: BorderRadius.circular(30)),
+                              child: Text(
+                                "Transactions",
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
                 ),
               ),
       ),
