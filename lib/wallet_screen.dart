@@ -1,12 +1,12 @@
-// ignore_for_file: must_be_immutable
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use, avoid_print
 
 import 'dart:developer';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/instance_manager.dart';
 import 'package:http/http.dart';
-
 import 'package:nexus_mobile/controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3auth_flutter/input.dart';
@@ -17,7 +17,9 @@ import 'package:web3dart/web3dart.dart';
 final _appController = Get.put(AppController());
 
 class WalletScreen extends StatefulWidget {
-  const WalletScreen({super.key});
+  const WalletScreen({
+    super.key,
+  });
 
   @override
   State<WalletScreen> createState() => _WalletScreenState();
@@ -25,7 +27,6 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   String walletBalance = "";
-
   String walletAddress = "";
 
   String userProfile = "";
@@ -38,6 +39,31 @@ class _WalletScreenState extends State<WalletScreen> {
       log("User cancelled.");
     } on UnKnownException {
       log("Unknown exception occurred");
+    }
+  }
+
+  Future<void> _transferTokens(String recipient, double amount) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final privateKey = prefs.getString('privateKey') ?? '0';
+      final web3Client =
+          Web3Client("https://rpc.ankr.com/eth_sepolia", Client());
+      final credentials = EthPrivateKey.fromHex(privateKey);
+
+      final weiAmount = BigInt.from(amount * 1e18);
+
+      final txHash = await web3Client.sendTransaction(
+        credentials,
+        Transaction(
+          to: EthereumAddress.fromHex(recipient),
+          value: EtherAmount.fromUnitAndValue(EtherUnit.wei, weiAmount),
+        ),
+        chainId: 11155111,
+      );
+      print("Transaction successful: $txHash");
+      await _getBalance();
+    } catch (e) {
+      print("Error transferring tokens: $e");
     }
   }
 
@@ -68,7 +94,7 @@ class _WalletScreenState extends State<WalletScreen> {
     return address.hexEip55;
   }
 
-  Future<EtherAmount> _getBalance() async {
+  Future<double> _getBalance() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final privateKey = prefs.getString('privateKey') ?? '0';
@@ -79,21 +105,19 @@ class _WalletScreenState extends State<WalletScreen> {
 
       final weiBalance = await client.getBalance(address);
 
-      final etherBalance = EtherAmount.fromBigInt(
-        EtherUnit.ether,
-        weiBalance.getInEther,
-      );
+      final etherBalance = weiBalance.getValueInUnit(EtherUnit.ether);
 
-      log(etherBalance.toString());
+      log("Balance: $etherBalance SepoliaETH");
 
       setState(() {
-        walletBalance = etherBalance.toString();
+        walletBalance =
+            "${etherBalance.toString().length > 6 ? etherBalance.toString().substring(0, 6) : etherBalance.toString()} SepoliaETH";
       });
 
       return etherBalance;
     } catch (e) {
       log("Error getting balance: $e");
-      return EtherAmount.zero();
+      return 0.0;
     }
   }
 
@@ -146,7 +170,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 child: CupertinoActivityIndicator(),
               )
             : Padding(
-                padding: EdgeInsets.symmetric(horizontal: 30),
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 child: ListView(
                   children: [
                     const SizedBox(
@@ -182,63 +206,104 @@ class _WalletScreenState extends State<WalletScreen> {
                     const SizedBox(
                       height: 30,
                     ),
+                    Container(
+                      padding: EdgeInsets.all(30),
+                      decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: <Color>[
+                              Color.fromRGBO(43, 72, 123, 1),
+                              Color.fromRGBO(46, 71, 111, 1),
+                              Color.fromRGBO(48, 70, 103, 1),
+                              Color.fromRGBO(49, 68, 101, 1),
+                              Color.fromRGBO(51, 67, 96, 1),
+                              Color.fromRGBO(53, 67, 87, 1),
+                              Color.fromRGBO(53, 67, 87, 1),
+                              Color.fromRGBO(53, 67, 87, 1),
+                              Color.fromRGBO(48, 69, 103, 1),
+                              Color.fromRGBO(43, 72, 119, 1),
+                              Color.fromRGBO(39, 75, 133, 1),
+                              Color.fromRGBO(36, 77, 143, 1),
+                              Color.fromRGBO(35, 78, 147, 1),
+                            ], // Gradient from https://learnui.design/tools/gradient-generator.html
+                            tileMode: TileMode.mirror,
+                          ),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "${walletAddress.substring(0, 7)}...${walletAddress.substring(37)}",
+                                style: TextStyle(fontSize: 18),
+                              ),
+                              IconButton(
+                                  onPressed: () async {
+                                    await Clipboard.setData(
+                                        ClipboardData(text: walletAddress));
+                                  },
+                                  icon: Icon(
+                                    Icons.copy_rounded,
+                                    color: Colors.white,
+                                  ))
+                            ],
+                          ),
+                          Text(
+                            walletBalance,
+                            style: TextStyle(
+                                fontSize: 32, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(
+                            height: 15,
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              GestureDetector(
+                                  onTap: () {
+                                    _transferTokens(
+                                        "0x756f70d15C7dC0C4e50bB067FCa4038A7F417DD7",
+                                        0.089999944525287);
+                                  },
+                                  child: button("Send", Icons.arrow_upward)),
+                              button("Receive", Icons.arrow_downward),
+                              button("Buy", Icons.add),
+                            ],
+                          )
+                        ],
+                      ),
+                    )
                   ],
                 ),
               ),
       ),
     );
   }
+
+  Widget button(String name, IconData icon) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+      decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 52, 119, 235),
+          borderRadius: BorderRadius.circular(30)),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 15,
+          ),
+          const SizedBox(
+            width: 3,
+          ),
+          Text(
+            name,
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
 }
-
-/*
-
-ElevatedButtonTheme(
-                  data: ElevatedButtonThemeData(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 195, 47, 233),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  child: Visibility(
-                    visible: logoutVisible,
-                    child: Column(
-                      children: [
-                        Center(
-                          child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red[600],
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: _logout(),
-                              child: const Column(
-                                children: [
-                                  Text('Logout'),
-                                ],
-                              )),
-                        ),
-                        const Text(
-                          'Blockchain calls',
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getUserInfo,
-                          child: const Text('Get UserInfo'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getAddress,
-                          child: const Text('Get Address'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _getBalance,
-                          child: const Text('Get Balance'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _sendTransaction,
-                          child: const Text('Send Transaction'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-*/

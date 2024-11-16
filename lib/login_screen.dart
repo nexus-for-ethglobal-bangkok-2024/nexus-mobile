@@ -98,24 +98,29 @@ class LoginScreen extends StatelessWidget {
           const SizedBox(
             height: 30,
           ),
-          SocialButtonWidget(
-              function: loginWithGoogle,
-              functionName: "Continue with Google",
-              functionImage: "assets/images/google.png"),
-          const SizedBox(
-            height: 20,
-          ),
-          SocialButtonWidget(
-              function: loginWithGithub,
-              functionName: "Continue with GitHub",
-              functionImage: "assets/images/github.png"),
-          const SizedBox(
-            height: 20,
-          ),
-          SocialButtonWidget(
-              function: loginWithDiscord,
-              functionName: "Continue with Discord",
-              functionImage: "assets/images/discord.png")
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SocialButtonWidget(
+                  function: loginWithGoogle,
+                  functionName: "Continue with Google",
+                  functionImage: "assets/images/google.png"),
+              const SizedBox(
+                width: 25,
+              ),
+              SocialButtonWidget(
+                  function: loginWithGithub,
+                  functionName: "Continue with GitHub",
+                  functionImage: "assets/images/github.png"),
+              const SizedBox(
+                width: 25,
+              ),
+              SocialButtonWidget(
+                  function: loginWithDiscord,
+                  functionName: "Continue with Discord",
+                  functionImage: "assets/images/discord.png")
+            ],
+          )
         ],
       ),
     );
@@ -227,7 +232,7 @@ class CustomButtonWidget extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 180, 178, 178),
+          color: const Color.fromARGB(255, 212, 203, 203),
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -269,31 +274,18 @@ class SocialButtonWidget extends StatelessWidget {
     return GestureDetector(
       onTap: function,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           border: Border.all(width: 1, color: Colors.white),
           borderRadius: BorderRadius.circular(25),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 30,
-              height: 30,
-              child: Image.asset(
-                functionImage,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(
-              width: 20,
-            ),
-            Text(
-              functionName,
-              style: const TextStyle(fontSize: 16, color: Colors.white),
-            ),
-          ],
+        child: SizedBox(
+          width: 30,
+          height: 30,
+          child: Image.asset(
+            functionImage,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );

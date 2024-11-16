@@ -12,8 +12,6 @@ import 'package:web3auth_flutter/input.dart';
 import 'package:web3auth_flutter/output.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 
-import 'package:http/http.dart';
-import 'package:web3dart/web3dart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _appController = Get.put(AppController());
@@ -118,6 +116,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final Web3AuthResponse response = await method();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('privateKey', response.privKey.toString());
+      _appController.logoutVisible.value = true;
     } on UserCancelledException {
       log("User cancelled.");
     } on UnKnownException {
@@ -134,40 +133,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ));
     } catch (e) {
       log("Error during email/passwordless login: $e");
-      // Handle the error as needed
-      // You might want to show a user-friendly message or log the error
       return Future.error("Login failed");
-    }
-  }
-
-  Future<String> _sendTransaction() async {
-    final prefs = await SharedPreferences.getInstance();
-    final privateKey = prefs.getString('privateKey') ?? '0';
-
-    final client = Web3Client(rpcUrl, Client());
-    final credentials = EthPrivateKey.fromHex(privateKey);
-    final address = credentials.address;
-    try {
-      final receipt = await client.sendTransaction(
-        credentials,
-        Transaction(
-          from: address,
-          to: EthereumAddress.fromHex(
-            '0xeaA8Af602b2eDE45922818AE5f9f7FdE50cFa1A8',
-          ),
-          // gasPrice: EtherAmount.fromUnitAndValue(EtherUnit.gwei, 100),
-          value: EtherAmount.fromInt(
-            EtherUnit.gwei,
-            5000000,
-          ), // 0.005 ETH
-        ),
-        chainId: 11155111,
-      );
-      log(receipt);
-
-      return receipt;
-    } catch (e) {
-      return e.toString();
     }
   }
 
